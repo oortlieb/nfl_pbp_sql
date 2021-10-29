@@ -1,5 +1,5 @@
 {
-  "name": "nfl_fantasy_stats_sql",
+  "name": "nfl_pbp_sql",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
