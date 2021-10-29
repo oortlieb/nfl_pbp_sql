@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/nfl_pbp_sql/static/css/main.8c8b27cf.chunk.css",
-    "main.js": "/nfl_pbp_sql/static/js/main.42b2b19b.chunk.js",
-    "main.js.map": "/nfl_pbp_sql/static/js/main.42b2b19b.chunk.js.map",
+    "main.js": "/nfl_pbp_sql/static/js/main.6ac57b31.chunk.js",
+    "main.js.map": "/nfl_pbp_sql/static/js/main.6ac57b31.chunk.js.map",
     "runtime-main.js": "/nfl_pbp_sql/static/js/runtime-main.d49f8592.js",
     "runtime-main.js.map": "/nfl_pbp_sql/static/js/runtime-main.d49f8592.js.map",
     "static/js/2.3620f3a2.chunk.js": "/nfl_pbp_sql/static/js/2.3620f3a2.chunk.js",
@@ -17,6 +17,6 @@
     "static/js/runtime-main.d49f8592.js",
     "static/js/2.3620f3a2.chunk.js",
     "static/css/main.8c8b27cf.chunk.css",
-    "static/js/main.42b2b19b.chunk.js"
+    "static/js/main.6ac57b31.chunk.js"
   ]
 }
