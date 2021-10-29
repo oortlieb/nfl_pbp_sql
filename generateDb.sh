@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# curl "http://nflsavant.com/pbp_data.php?year=2021" -o pbp_2020.csv
+# curl "http://nflsavant.com/pbp_data.php?year=2021" -o pbp_2021.csv
 
-rm pbp_2020.sqlite
+rm pbp_2021.sqlite
 
-sqlite3 pbp_2020.sqlite << 'END_SQL'
+sqlite3 pbp_2021.sqlite << 'END_SQL'
 .mode csv
 
-.import pbp_2020.csv plays_text
+.import pbp_2021.csv plays_text
 
 .schema plays_text
 
