@@ -68,10 +68,10 @@ function RenderedResults({ results }: { results: QueryExecResult }) {
             <th key={idx}>{c}</th>
           ))}
         </tr>
-        {values.map((v, idx) => (
-          <tr>
-            {v.map((col) => (
-              <td>{col}</td>
+        {values.map((v, vIdx) => (
+          <tr key={vIdx}>
+            {v.map((col, colIdx) => (
+              <td key={colIdx}>{col}</td>
             ))}
           </tr>
         ))}
