@@ -11,7 +11,7 @@ function App() {
 
   useEffect(() => {
     // fetch wasm file
-    initSqlJs({ locateFile: () => "/sql-wasm.wasm" }).then((SQL) => {
+    initSqlJs({ locateFile: () => "./sql-wasm.wasm" }).then((SQL) => {
       fetch("/pbp_2021.sqlite")
         .then((res) => res.arrayBuffer())
         .then((ab) => setDb(new SQL.Database(new Uint8Array(ab))))
