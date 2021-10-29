@@ -12,7 +12,7 @@ function App() {
   useEffect(() => {
     // fetch wasm file
     initSqlJs({ locateFile: () => "/sql-wasm.wasm" }).then((SQL) => {
-      fetch("/pbp_2020.sqlite")
+      fetch("/pbp_2021.sqlite")
         .then((res) => res.arrayBuffer())
         .then((ab) => setDb(new SQL.Database(new Uint8Array(ab))))
         .catch((e) => setLoadingError(e));
