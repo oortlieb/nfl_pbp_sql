@@ -2,8 +2,10 @@
   "name": "nfl_pbp_sql",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://oortlieb.github.io/nfl_pbp_sql",
+  "homepage": "https://oortlieb.github.io/nfl_pbp_sql/",
   "dependencies": {
+    "@emotion/react": "^11.5.0",
+    "@emotion/styled": "^11.3.0",
     "cra-template-typescript": "1.1.2",
     "formik": "^2.2.9",
     "react": "^17.0.2",
