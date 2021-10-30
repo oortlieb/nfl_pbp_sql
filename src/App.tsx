@@ -1,8 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "./App.css";
 import initSqlJs, { Database, QueryExecResult } from "sql.js";
 import { useFormik } from "formik";
 import styled from "@emotion/styled";
+import { format } from "sql-formatter";
+import { Controlled as CodeMirror } from "react-codemirror2";
+import "codemirror/lib/codemirror.css";
+import "codemirror/theme/material.css";
+import "codemirror/mode/sql/sql";
 
 function App() {
   const [db, setDb] = useState<Database | null>(null);
@@ -95,24 +100,40 @@ function RenderedResults({ results }: { results: QueryExecResult }) {
 function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
   const formik = useFormik({
     initialValues: {
-      query:
-        "select count(*) as 'sacks', formation from plays where is_sack = true group by formation",
+      query: format(
+        "select count(*) as 'sacks', formation from plays where is_sack = true group by formation"
+      ),
     },
     onSubmit: (values) => onSubmit(values.query),
   });
 
+  const formatSQL = useCallback(() => {
+    formik.setFieldValue("query", format(formik.values.query));
+  }, [formik.values.query]);
+
   return (
     <form onSubmit={formik.handleSubmit}>
-      <div>
-        <textarea
-          rows={10}
-          cols={80}
-          id="query"
-          value={formik.values.query}
-          onChange={formik.handleChange}
-        />
-      </div>
+      <CodeMirror
+        options={{
+          mime: "text/x-sql",
+          lineWrapping: true,
+          lineNumbers: true,
+          showCursorWhenSelecting: true,
+          hintOptions: {
+            tables: {
+              plays: ["game_id"],
+            },
+          },
+        }}
+        value={formik.values.query}
+        onBeforeChange={(_editor, _data, value) => {
+          formik.setFieldValue("query", value);
+        }}
+      />
       <button type="submit">RUN</button>
+      <button type="button" onClick={formatSQL}>
+        FORMAT
+      </button>
     </form>
   );
 }
