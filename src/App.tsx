@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import "./App.css";
 import initSqlJs, { Database, QueryExecResult } from "sql.js";
 import { useFormik } from "formik";
+import styled from "@emotion/styled";
 
 function App() {
   const [db, setDb] = useState<Database | null>(null);
   const [loadingError, setLoadingError] = useState(null);
+  const [sqlError, setSQLError] = useState<string | null>(null);
   const [results, setResults] = useState<QueryExecResult[]>([]);
   const [currentQuery, setCurrentQuery] = useState<string>("");
 
@@ -21,7 +23,13 @@ function App() {
 
   useEffect(() => {
     if (db && currentQuery) {
-      setResults(db?.exec(currentQuery));
+      try {
+        setResults(db?.exec(currentQuery));
+        setSQLError(null);
+      } catch (e) {
+        setResults([]);
+        setSQLError((e as Error).message);
+      }
     }
   }, [currentQuery, db]);
 
@@ -44,10 +52,14 @@ function App() {
         </div>
       )}
       <div>
-        {currentQuery && (
-          <div>
-            Showing results for: <pre>{currentQuery}</pre>
-          </div>
+        {sqlError ? (
+          <ErrorIndicator error={sqlError} />
+        ) : (
+          currentQuery && (
+            <div>
+              Showing results for: <pre>{currentQuery}</pre>
+            </div>
+          )
         )}
       </div>
     </>
@@ -100,9 +112,22 @@ function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
           onChange={formik.handleChange}
         />
       </div>
-      <button>RUN</button>
+      <button type="submit">RUN</button>
     </form>
   );
 }
+
+function ErrorIndicator({ error }: { error: string }) {
+  return (
+    <div>
+      <ErrorText>SQL Error!</ErrorText>
+      <ErrorText>{error}</ErrorText>
+    </div>
+  );
+}
+
+const ErrorText = styled.div({
+  color: "red",
+});
 
 export default App;
