@@ -1,31 +1,89 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import "./App.css";
 import initSqlJs, { Database, QueryExecResult } from "sql.js";
 import { useFormik } from "formik";
 import styled from "@emotion/styled";
 import { format } from "sql-formatter";
+import { Editor, hint } from "codemirror";
 import { Controlled as CodeMirror } from "react-codemirror2";
 import { saveAs } from "file-saver";
 import "codemirror/lib/codemirror.css";
 import "codemirror/theme/material.css";
 import "codemirror/mode/sql/sql";
+import "codemirror/addon/hint/show-hint.css"; // without this css hints won't show
+import "codemirror/addon/hint/show-hint";
+import "codemirror/addon/hint/sql-hint";
+import {
+  BrowserRouter,
+  Link,
+  Route,
+  Routes,
+  useSearchParams,
+} from "react-router-dom";
+import {
+  Disclosure,
+  DisclosureButton,
+  DisclosurePanel,
+} from "@reach/disclosure";
 
 function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/nfl_pbp_sql/db" element={<DBViewerScreen />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function Home() {
+  return <Link to="/nfl_pbp_sql/db?dbURL=pbp_2021.sqlite">Go to NFL data</Link>;
+}
+
+type DBViewerProps = {
+  dbURL: string;
+};
+
+type SQLiteColumnType = "INT" | "TEXT" | "BOOLEAN";
+
+function DBViewerScreen() {
+  const [searchParams] = useSearchParams();
+  const dbURL = searchParams.get("dbURL");
+  return <DBViewer dbURL={`./${dbURL}`} />;
+}
+
+function DBViewer({ dbURL }: DBViewerProps) {
   const [db, setDb] = useState<Database | null>(null);
   const [loadingError, setLoadingError] = useState(null);
   const [sqlError, setSQLError] = useState<string | null>(null);
   const [results, setResults] = useState<QueryExecResult[]>([]);
+  const [schemaQueryResult, setSchemaQueryResult] = useState<QueryExecResult[]>(
+    []
+  );
   const [currentQuery, setCurrentQuery] = useState<string>("");
 
   useEffect(() => {
     // fetch wasm file
     initSqlJs({ locateFile: () => "./sql-wasm.wasm" }).then((SQL) => {
-      fetch("./pbp_2021.sqlite")
+      fetch(dbURL)
         .then((res) => res.arrayBuffer())
         .then((ab) => setDb(new SQL.Database(new Uint8Array(ab))))
         .catch((e) => setLoadingError(e));
     });
-  }, []);
+  }, [dbURL]);
+
+  useEffect(() => {
+    if (db) {
+      try {
+        setSchemaQueryResult(db?.exec("SELECT * FROM sqlite_schema"));
+        setSQLError(null);
+      } catch (e) {
+        setResults([]);
+        setSQLError((e as Error).message);
+      }
+    }
+  }, [db]);
 
   useEffect(() => {
     if (db && currentQuery) {
@@ -50,10 +108,14 @@ function App() {
   }
   return (
     <>
-      <QueryEditor onSubmit={setCurrentQuery} />
-
-      {results[0] && <RenderedResults results={results[0]} />}
-      <div>{sqlError && <ErrorIndicator error={sqlError} />}</div>
+      <div className="layout-grid">
+        <div>
+          <QueryEditor onSubmit={setCurrentQuery} />
+          {results[0] && <RenderedResults results={results[0]} />}
+          <div>{sqlError && <ErrorIndicator error={sqlError} />}</div>
+        </div>
+        <DBDescriber schemaQueryResult={schemaQueryResult} />
+      </div>
     </>
   );
 }
@@ -89,11 +151,32 @@ function RenderedResults({ results }: { results: QueryExecResult }) {
   );
 }
 
+const hintOptions = {
+  tables: {
+    games: ["col_A", "col_B", "col_C"],
+    players: ["other_columns1", "other_columns2"],
+  },
+  disableKeywords: true,
+  completeSingle: false,
+  completeOnSingleClick: false,
+};
+
+const cmOptions = {
+  mime: "text/x-sql",
+  mode: { name: "sql" },
+  extraKeys: { "Ctrl-Space": "autocomplete" },
+  hint: hint.sql,
+  hintOptions,
+  lineWrapping: true,
+  lineNumbers: true,
+  showCursorWhenSelecting: true,
+};
+
 function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
   const formik = useFormik({
     initialValues: {
       query: format(
-        "select count(*) as 'sacks', formation from plays where is_sack = true group by formation"
+        'select * from player_games where week=1 and pos="QB" order by total_points desc'
       ),
     },
     onSubmit: (values) => onSubmit(values.query),
@@ -106,20 +189,11 @@ function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
   return (
     <form onSubmit={formik.handleSubmit}>
       <CodeMirror
-        options={{
-          mime: "text/x-sql",
-          lineWrapping: true,
-          lineNumbers: true,
-          showCursorWhenSelecting: true,
-          hintOptions: {
-            tables: {
-              plays: ["game_id"],
-            },
-          },
-        }}
+        options={cmOptions}
         value={formik.values.query}
-        onBeforeChange={(_editor, _data, value) => {
+        onBeforeChange={(editor: Editor, _data, value) => {
           formik.setFieldValue("query", value);
+          editor.showHint(hintOptions);
         }}
       />
       <button type="submit">RUN</button>
@@ -165,6 +239,69 @@ function queryResultToCSV(queryResult: QueryExecResult) {
 
 function downloadCSV(queryResult: QueryExecResult) {
   return saveAs(new Blob([queryResultToCSV(queryResult)]), "download.tsv");
+}
+
+type DBDescriberProps = {
+  schemaQueryResult: QueryExecResult[];
+};
+
+function DBDescriber({ schemaQueryResult }: DBDescriberProps) {
+  if (schemaQueryResult.length < 1) {
+    return <div />;
+  }
+
+  const rows = schemaQueryResult[0].values.map(
+    ([_type, name, _tableName, _rootPage, sql]) => (
+      <SQLiteTableDescription
+        key={name as string}
+        name={name as string}
+        sql={sql as string}
+      />
+    )
+  );
+
+  return <div>{rows}</div>;
+}
+
+type SQLiteTableDescriptionProps = { name: string; sql: string };
+
+function SQLiteTableDescription({ name, sql }: SQLiteTableDescriptionProps) {
+  const columnsData = useMemo(() => {
+    const columnDefns = sql
+      .substring(sql.indexOf("(") + 1, sql.lastIndexOf(")"))
+      .trim();
+
+    const removeTrailingComma = /,$/;
+    return columnDefns.split("\n").map((s) => {
+      return s.trim().replace(removeTrailingComma, "").split(" ");
+    });
+  }, [sql]);
+
+  return (
+    <div>
+      <Disclosure>
+        <DisclosureButton>
+          <b>{name}</b>
+        </DisclosureButton>
+
+        <DisclosurePanel>
+          {columnsData.map((c: string[]) => (
+            <div key={c[0]}>
+              {c[0]} <TypeIcon type={c[1] as SQLiteColumnType} />
+            </div>
+          ))}
+        </DisclosurePanel>
+      </Disclosure>
+    </div>
+  );
+}
+
+type TypeIconProps = {
+  type: SQLiteColumnType;
+};
+
+function TypeIcon({ type }: TypeIconProps) {
+  return <b>{type}</b>;
 }
 
 export default App;
