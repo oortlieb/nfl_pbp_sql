@@ -16,6 +16,7 @@ create table player_games(
     week INT NOT NULL,
     team TEXT,
     player_opponent TEXT,
+    at_home BOOLEAN,
     passing_yds INT DEFAULT 0 NOT NULL,
     passing_int INT DEFAULT 0 NOT NULL,
     passing_td INT DEFAULT 0 NOT NULL,
@@ -33,7 +34,7 @@ create table player_games(
     touches INT DEFAULT 0 NOT NULL,
     targets_receptions INT DEFAULT 0 NOT NULL,
     targets INT DEFAULT 0 NOT NULL,
-    reception_percentage FLOAT DEFAULT 0 NOT NULL,
+    reception_percentage INT DEFAULT 0 NOT NULL,
     rz_target INT DEFAULT 0 NOT NULL,
     rz_touch INT DEFAULT 0 NOT NULL,
     rz_g2g INT DEFAULT 0 NOT NULL,
@@ -86,14 +87,15 @@ insert into player_games(
     rz_g2g,
     rank,
     total_points,
-    week
+    week,
+    at_home
 )
 select
     "PlayerName",
     "PlayerId",
     "Pos",
     "Team",
-    "PlayerOpponent",
+    trim("PlayerOpponent", '@'),
     "PassingYDS",
     "PassingInt",
     "PassingTD",
@@ -117,7 +119,8 @@ select
     "RzG2G",
     "Rank",
     "TotalPoints",
-    "${weekNumber}"
+    "${weekNumber}",
+    NOT INSTR("PlayerOpponent", '@')
 from temp;
 
 drop table temp;

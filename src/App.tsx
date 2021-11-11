@@ -26,6 +26,24 @@ import {
   DisclosurePanel,
 } from "@reach/disclosure";
 
+const EXAMPLE_QUERIES = [
+  {
+    desc: "Most passing TD at home this year",
+    query:
+      'select player_name, sum(passing_td) as "passing td" from player_games where at_home group by player_name having sum(passing_td) > 0 order by sum(passing_td) desc',
+  },
+  {
+    desc: "Fantasy points scored by a team",
+    query:
+      "select team, sum(total_points) from player_games group by team order by sum(total_points) desc",
+  },
+  {
+    desc: "Fantasy points allowed by a team",
+    query:
+      "select player_opponent, sum(total_points) from player_games group by player_opponent order by sum(total_points) desc",
+  },
+];
+
 function App() {
   return (
     <BrowserRouter>
@@ -97,10 +115,6 @@ function DBViewer({ dbURL }: DBViewerProps) {
     }
   }, [currentQuery, db]);
 
-  // if (error) return <pre>{error.toString()}</pre>;
-  // else if (!db) return <pre>Loading...</pre>;
-  // else return <SQLRepl db={db} />;
-
   if (loadingError) {
     return <div>Error: {JSON.stringify(loadingError)}</div>;
   } else if (db === null) {
@@ -109,12 +123,17 @@ function DBViewer({ dbURL }: DBViewerProps) {
   return (
     <>
       <div className="layout-grid">
-        <div>
+        <div className="left-col-wrapper">
           <QueryEditor onSubmit={setCurrentQuery} />
-          {results[0] && <RenderedResults results={results[0]} />}
-          <div>{sqlError && <ErrorIndicator error={sqlError} />}</div>
+          <DBDescriber schemaQueryResult={schemaQueryResult} />
         </div>
-        <DBDescriber schemaQueryResult={schemaQueryResult} />
+
+        {results[0] && <RenderedResults results={results[0]} />}
+        {sqlError && (
+          <div>
+            <ErrorIndicator error={sqlError} />
+          </div>
+        )}
       </div>
     </>
   );
@@ -127,27 +146,54 @@ function RenderedResults({ results }: { results: QueryExecResult }) {
 
   const { columns, values } = results;
   return (
-    <RenderedResultsWrapper>
-      <button type="button" onClick={() => downloadCSV(results)}>
-        DOWNLOAD
-      </button>
-      <Table>
-        <tbody>
-          <tr>
-            {columns.map((c, idx) => (
-              <th key={idx}>{c}</th>
-            ))}
-          </tr>
-          {values.map((v, vIdx) => (
-            <tr key={vIdx}>
-              {v.map((col, colIdx) => (
-                <td key={colIdx}>{col}</td>
+    <>
+      <div className="results-table-scroll-wrapper">
+        <RenderedResultsWrapper>
+          <Table>
+            <tbody>
+              <tr>
+                {columns.map((c, idx) => (
+                  <th key={idx}>{c}</th>
+                ))}
+              </tr>
+              {values.map((v, vIdx) => (
+                <tr key={vIdx} className="result-row">
+                  {v.map((col, colIdx) => (
+                    <td key={colIdx}>{col || 0}</td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-    </RenderedResultsWrapper>
+            </tbody>
+          </Table>
+        </RenderedResultsWrapper>
+      </div>
+      <div />
+      <div>
+        {results && (
+          <button type="button" onClick={() => downloadTSV(results)}>
+            Download TSV
+          </button>
+        )}
+      </div>
+      <div />
+      <div>
+        <div>
+          <div>
+            Data from{" "}
+            <a href="https://github.com/hvpkod/NFL-Data">
+              https://github.com/hvpkod/NFL-Data
+            </a>
+          </div>
+          <div>
+            post on{" "}
+            <a href="https://www.reddit.com/r/fantasyfootball/comments/qmlcvm/how_about_some_raw_data/">
+              reddit
+            </a>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </>
   );
 }
 
@@ -175,9 +221,7 @@ const cmOptions = {
 function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
   const formik = useFormik({
     initialValues: {
-      query: format(
-        'select * from player_games where week=1 and pos="QB" order by total_points desc'
-      ),
+      query: format(EXAMPLE_QUERIES[0].query),
     },
     onSubmit: (values) => onSubmit(values.query),
   });
@@ -187,20 +231,27 @@ function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
   }, [formik]);
 
   return (
-    <form onSubmit={formik.handleSubmit}>
-      <CodeMirror
-        options={cmOptions}
-        value={formik.values.query}
-        onBeforeChange={(editor: Editor, _data, value) => {
-          formik.setFieldValue("query", value);
-          editor.showHint(hintOptions);
-        }}
-      />
-      <button type="submit">RUN</button>
-      <button type="button" onClick={formatSQL}>
-        FORMAT
-      </button>
-    </form>
+    <>
+      <form onSubmit={formik.handleSubmit}>
+        <CodeMirror
+          options={cmOptions}
+          value={formik.values.query}
+          onBeforeChange={(editor: Editor, _data, value) => {
+            formik.setFieldValue("query", value);
+            editor.showHint(hintOptions);
+          }}
+        />
+        <div className="button-wrapper">
+          <button type="submit">Run Query</button>
+          <button type="button" onClick={formatSQL}>
+            Format Query
+          </button>
+        </div>
+        <ExampleQueries
+          onSelect={(s: string) => formik.setFieldValue("query", format(s))}
+        />
+      </form>
+    </>
   );
 }
 
@@ -218,27 +269,27 @@ const ErrorText = styled.div({
 });
 
 const Table = styled.table({
-  borderCollapse: "separate",
-  borderSpacing: "12px",
-  textAlign: "left",
+  textAlign: "center",
   border: "1px solid black",
 });
 
 const RenderedResultsWrapper = styled.div({
   marginTop: "12px",
+  maxWidth: "100%",
+  boxSizing: "border-box",
 });
 
 const ROW_SEP = "\n";
 const COL_SEP = "\t";
-function queryResultToCSV(queryResult: QueryExecResult) {
+function queryResultToTSV(queryResult: QueryExecResult) {
   let lines = [queryResult.columns.join(COL_SEP)];
   lines = lines.concat(queryResult.values.map((r) => r.join(COL_SEP)));
 
   return lines.join(ROW_SEP);
 }
 
-function downloadCSV(queryResult: QueryExecResult) {
-  return saveAs(new Blob([queryResultToCSV(queryResult)]), "download.tsv");
+function downloadTSV(queryResult: QueryExecResult) {
+  return saveAs(new Blob([queryResultToTSV(queryResult)]), "download.tsv");
 }
 
 type DBDescriberProps = {
@@ -260,7 +311,12 @@ function DBDescriber({ schemaQueryResult }: DBDescriberProps) {
     )
   );
 
-  return <div>{rows}</div>;
+  return (
+    <div>
+      <h2>Table information</h2>
+      <p>{rows}</p>
+    </div>
+  );
 }
 
 type SQLiteTableDescriptionProps = { name: string; sql: string };
@@ -302,6 +358,25 @@ type TypeIconProps = {
 
 function TypeIcon({ type }: TypeIconProps) {
   return <b>{type}</b>;
+}
+
+function ExampleQueries({ onSelect }: { onSelect: (s: string) => void }) {
+  return (
+    <div>
+      <h2>Example Queries</h2>
+      <div>
+        {EXAMPLE_QUERIES.map(({ desc, query }) => (
+          <button
+            type="button"
+            className="example-query"
+            onClick={() => onSelect(query)}
+          >
+            {desc}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default App;

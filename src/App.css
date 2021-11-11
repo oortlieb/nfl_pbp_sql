@@ -30,7 +30,40 @@
 
 .layout-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 400px 1fr;
+  grid-template-rows: calc(100vh - 100px) 40px 60px;
+}
+
+.results-table-scroll-wrapper {
+  overflow: auto;
+}
+
+.result-row {
+  border-top: 1px solid #9e9e9e;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+.left-col-wrapper {
+  padding: 12px;
+}
+
+.example-query {
+  background: none;
+  outline: none;
+  border: none;
+  cursor: pointer;
+}
+
+.example-query:hover {
+  color: blue;
+}
+
+.button-wrapper {
+  display: flex;
+  justify-content: space-around;
 }
 
 @keyframes App-logo-spin {
