@@ -58,7 +58,7 @@ function App() {
 function Home() {
   return (
     <>
-      <Link to="/db?dbURL=ff_2021.sqlite">FF data</Link>
+      <Link to="/db?dbURL=ff_2021.sqlite">Superflex SQL</Link>
       <Link to="/db?dbURL=pbp_2021.sqlite">NFL PBP data</Link>
     </>
   );
@@ -226,7 +226,7 @@ const cmOptions = {
 function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
   const formik = useFormik({
     initialValues: {
-      query: format(EXAMPLE_QUERIES[0].query),
+      query: EXAMPLE_QUERIES[0].query,
     },
     onSubmit: (values) => onSubmit(values.query),
   });
@@ -237,6 +237,7 @@ function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
 
   return (
     <>
+      <h1>Superflex SQL</h1>
       <form onSubmit={formik.handleSubmit}>
         <CodeMirror
           options={cmOptions}
