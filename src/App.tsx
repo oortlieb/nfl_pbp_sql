@@ -46,17 +46,22 @@ const EXAMPLE_QUERIES = [
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/nfl_pbp_sql">
       <Routes>
-        <Route path="/nfl_pbp_sql" element={<Home />} />
-        <Route path="/nfl_pbp_sql/db" element={<DBViewerScreen />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/db" element={<DBViewerScreen />} />
       </Routes>
     </BrowserRouter>
   );
 }
 
 function Home() {
-  return <Link to="/nfl_pbp_sql/db?dbURL=pbp_2021.sqlite">Go to NFL data</Link>;
+  return (
+    <>
+      <Link to="/db?dbURL=ff_2021.sqlite">FF data</Link>
+      <Link to="/db?dbURL=pbp_2021.sqlite">NFL PBP data</Link>
+    </>
+  );
 }
 
 type DBViewerProps = {
@@ -314,7 +319,7 @@ function DBDescriber({ schemaQueryResult }: DBDescriberProps) {
   return (
     <div>
       <h2>Table information</h2>
-      <p>{rows}</p>
+      <div>{rows}</div>
     </div>
   );
 }
@@ -365,8 +370,9 @@ function ExampleQueries({ onSelect }: { onSelect: (s: string) => void }) {
     <div>
       <h2>Example Queries</h2>
       <div>
-        {EXAMPLE_QUERIES.map(({ desc, query }) => (
+        {EXAMPLE_QUERIES.map(({ desc, query }, idx) => (
           <button
+            key={idx}
             type="button"
             className="example-query"
             onClick={() => onSelect(query)}
