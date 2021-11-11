@@ -48,7 +48,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/nfl_pbp_sql" element={<Home />} />
         <Route path="/nfl_pbp_sql/db" element={<DBViewerScreen />} />
       </Routes>
     </BrowserRouter>
