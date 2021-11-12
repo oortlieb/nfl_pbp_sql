@@ -234,9 +234,13 @@ const cmOptions = {
 };
 
 function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
+  const [searchParams] = useSearchParams();
+  const [showShareLink, setShowShareLink] = useState(false);
   const formik = useFormik({
     initialValues: {
-      query: EXAMPLE_QUERIES[0].query,
+      query: searchParams.get("query")
+        ? decodeURIComponent(searchParams.get("query") as string)
+        : EXAMPLE_QUERIES[0].query,
     },
     onSubmit: (values) => onSubmit(values.query),
   });
@@ -247,6 +251,31 @@ function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
 
   return (
     <>
+      {showShareLink && (
+        <div className="show-share-link">
+          <div
+            style={{ cursor: "pointer", textAlign: "right" }}
+            onClick={() => setShowShareLink(false)}
+          >
+            X
+          </div>
+          <h1>Share your query by sending this link</h1>
+          <div style={{ padding: "10px" }}>
+            {window.location +
+              `&query=${encodeURIComponent(formik.values.query)}`}
+          </div>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(
+                window.location +
+                  `&query=${encodeURIComponent(formik.values.query)}`
+              );
+            }}
+          >
+            Copy to clipboard
+          </button>
+        </div>
+      )}
       <h1>Superflex SQL</h1>
       <form onSubmit={formik.handleSubmit}>
         <CodeMirror
@@ -261,6 +290,12 @@ function QueryEditor({ onSubmit }: { onSubmit: (s: string) => void }) {
           <button type="submit">Run Query</button>
           <button type="button" onClick={formatSQL}>
             Format Query
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowShareLink(!showShareLink)}
+          >
+            Share Query URL
           </button>
         </div>
         <ExampleQueries
