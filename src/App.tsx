@@ -42,6 +42,16 @@ const EXAMPLE_QUERIES = [
     query:
       "select player_opponent, sum(total_points) from player_games group by player_opponent order by sum(total_points) desc",
   },
+  {
+    desc: "Players with negative fantasy points",
+    query:
+      "select player_name, sum(total_points) from player_games group by player_name having sum(total_points) < 0 order by sum(total_points) asc",
+  },
+  {
+    desc: "Total fantasy points scored per week",
+    query:
+      "select week, sum(total_points) from player_games group by week order by sum(total_points) desc",
+  },
 ];
 
 function App() {
@@ -139,6 +149,24 @@ function DBViewer({ dbURL }: DBViewerProps) {
             <ErrorIndicator error={sqlError} />
           </div>
         )}
+        <div />
+        <div>
+          <div>
+            <div>
+              Data from{" "}
+              <a href="https://github.com/hvpkod/NFL-Data">
+                https://github.com/hvpkod/NFL-Data
+              </a>
+            </div>
+            <div>
+              post on{" "}
+              <a href="https://www.reddit.com/r/fantasyfootball/comments/qmlcvm/how_about_some_raw_data/">
+                reddit
+              </a>
+            </div>
+          </div>
+          <div></div>
+        </div>
       </div>
     </>
   );
@@ -179,24 +207,6 @@ function RenderedResults({ results }: { results: QueryExecResult }) {
             Download TSV
           </button>
         )}
-      </div>
-      <div />
-      <div>
-        <div>
-          <div>
-            Data from{" "}
-            <a href="https://github.com/hvpkod/NFL-Data">
-              https://github.com/hvpkod/NFL-Data
-            </a>
-          </div>
-          <div>
-            post on{" "}
-            <a href="https://www.reddit.com/r/fantasyfootball/comments/qmlcvm/how_about_some_raw_data/">
-              reddit
-            </a>
-          </div>
-        </div>
-        <div></div>
       </div>
     </>
   );
